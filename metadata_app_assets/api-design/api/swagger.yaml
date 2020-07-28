@@ -1,0 +1,1646 @@
+openapi: 3.0.0
+servers: []
+info:
+  version: "1.0.0"
+  title: Metadata Editor API
+  description: |
+    API for the editing of metadata.
+tags:
+  - name: User
+    description: API endpoints related to User
+  - name: Dashboard
+    description: API endpoints related to Dashboard
+  - name: Tags
+    description: API endpoints related to Tags
+  - name: Datasets
+    description: API endpoints related to Datasets
+  - name: Activities
+    description: API endpoints related to Activities    
+  - name: QuickSearch
+    description: API endpoints related to Quick Search
+  - name: Lookups
+    description: API endpoints related to Lookups
+    
+paths:
+  /me:
+    get:
+      summary: Retrieve information about the current user.
+      description: Retrieve information about the current user.
+      tags:
+        - User
+      operationId: getMe
+      security:
+        - bearer: []
+      responses:
+        '200':
+          $ref: '#/components/responses/UserInfoResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+          
+  /dashboardStats:
+    get:
+      summary: Retrieve the stats for the dashboard.
+      description: Retrieve the stats for the dashboard.
+      tags:
+        - Dashboard
+      operationId: getDashboardStats
+      security:
+        - bearer: []
+      responses:
+        '200':
+          $ref: '#/components/responses/DashboardStatsResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  
+  /datasets:
+    post:
+      summary: Create a new Dataset.
+      description: Create a new Dataset.
+      tags:
+        - Datasets
+      operationId: createDataset
+      security:
+        - bearer: []
+      requestBody:
+        description: |
+           Contains the information needed to create a new dataset.
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: The name of the dataset.
+                description:  
+                  type: string
+                  description: The description of the dataset.
+                tags:
+                  type: array
+                  description: Any associated tags for the new dataset.
+                  items:
+                    $ref: '#/components/schemas/DatasetTagValue'
+      responses:
+        '200':
+          $ref: '#/components/responses/DatasetResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+          
+  /datasets/{datasetId}:
+    parameters:
+      - $ref: '#/components/parameters/DatasetId'
+    get:
+      summary: Retrieve the given dataset.
+      description: Retrieve the given dataset.
+      tags:
+        - Datasets
+      operationId: getDataset
+      security:
+        - bearer: []
+      responses:
+        '200':
+          $ref: '#/components/responses/DatasetResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'          
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  
+  /datasets/{datasetId}/experts:
+    parameters:
+      - $ref: '#/components/parameters/DatasetId'
+    get:
+      summary: Retrieve the experts for the given dataset.
+      description: Retrieve the experts for the given dataset.
+      tags:
+        - Datasets
+        - Experts
+      operationId: getDatasetExperts
+      security:
+        - bearer: []
+      responses:
+        '200':
+          $ref: '#/components/responses/ExpertArrayResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'          
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    post:
+      summary: Add the experts to the given dataset.
+      description: Add the experts to the given dataset.
+      tags:
+        - Datasets
+        - Experts
+      operationId: addDatasetExperts
+      security:
+        - bearer: []
+      requestBody:
+        description: |
+           Contains the array of expert ids to add to the dataset.  If an expert id is already present
+           in the dataset, it is ignored.
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                type: string
+      responses:
+        '201':
+          $ref: '#/components/responses/NoContent'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'          
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /datasets/{datasetId}/experts/{expertId}:
+    parameters:
+      - $ref: '#/components/parameters/DatasetId'
+      - $ref: '#/components/parameters/ExpertId'
+    delete:
+      summary: Remove an expert from the given dataset.
+      description: Remove an expert from the given dataset.
+      tags:
+        - Datasets
+        - Experts
+      operationId: removeDatasetExpert
+      security:
+        - bearer: []
+      responses:
+        '204':
+          $ref: '#/components/responses/NoContent'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'          
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+          
+  /datasets/search:
+    post:
+      summary: Advanced search for datasets.
+      description: |
+        Advanced search for datasets.  Pagination is supported.  An empty result array is returned if no relevant
+        results are found.
+      tags:
+        - Datasets
+      operationId: searchDatasets
+      security:
+        - bearer: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DatasetSearchParameters'
+      responses:
+        '200':
+          $ref: '#/components/responses/DatasetArrayResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'      
+  
+  /datasets/associations/bulkUpdate:
+    post:
+      summary: Perform batch update on tag associations belonging to multiple datasets.
+      description: |
+        Perform batch update on tag associations belonging to multiple datasets.  The response
+        will contain the datasets which were updated successfully, and the datasets which failed to be deleted.
+      tags:
+        - Datasets
+      operationId: batchDatasetAssociation
+      security:
+        - bearer: []
+      requestBody:
+        description: Contains the Datasets to modify, and the Tag Modifications.
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                datasets:
+                  type: array
+                  description: The ids of the datasets that are involved in this batch oepration.
+                  items:
+                    type: string
+                tags:
+                  type: array
+                  description: |
+                    The ids of the tags that are involved in this batch operation, as well as the updated values for the given
+                    tags.
+                  items:
+                    $ref: '#/components/schemas/DatasetTagModifyRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/BatchOperationTagResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+          
+  /tags:
+    get:
+      summary: Retrieve the available tags in the Metadata Editor Application.
+      description: |
+        Retrieve the available tags in the Metadata Editor Application.  Pagination 
+        and filtering is supported.  An empty result array is returned if no relevant
+        results are found.
+      tags:
+        - Tags
+      operationId: getTags
+      security:
+        - bearer: []
+      parameters:
+        - $ref: '#/components/parameters/page'
+        - $ref: '#/components/parameters/perPage'      
+      responses:
+        '200':
+          $ref: '#/components/responses/TagArrayResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'          
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    post:
+      summary: Create a new Tag.
+      description: |
+        Creates a new Tag in the Metadata Editor Application.
+      tags:
+        - Tags
+      operationId: createTag
+      security:
+        - bearer: []
+      requestBody:
+        description: Request body with Tag details
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTagRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/TagResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'          
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /tags/search:
+    post:
+      summary: Advanced search for tags.
+      description: |
+        Advanced search for tags.  Pagination is supported.  An empty result array is returned if no relevant
+        results are found.
+      tags:
+        - Tags
+      operationId: searchTags
+      security:
+        - bearer: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TagSearchParameters'
+      responses:
+        '200':
+          $ref: '#/components/responses/TagArrayResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  
+  /tags/{tagId}:
+    parameters:
+      - $ref: '#/components/parameters/TagId'
+    get:
+      summary: Get the details for the given tag.
+      description: |
+        Retrieve the tag details.
+      tags:
+        - Tags
+      operationId: getTagDetail
+      security:
+        - bearer: []
+      responses:
+        '200':
+          $ref: '#/components/responses/TagDetailResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    post:
+      summary: Update the given tag.
+      description: |
+        Update the given tag.
+      tags:
+        - Tags
+      operationId: updateTag
+      security:
+        - bearer: []
+      requestBody:
+        description: Request body with Tag details
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateTagRequest'      
+      responses:
+        '200':
+          $ref: '#/components/responses/TagDetailResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    delete:
+      summary: Delete the given tag.
+      description: |
+        Delete the given tag.
+      tags:
+        - Tags
+      operationId: deleteTag
+      security:
+        - bearer: []
+      responses:
+        '204':
+          $ref: '#/components/responses/NoContent'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'      
+
+  /tags/{tagId}/updateValue:
+    parameters:
+      - $ref: '#/components/parameters/TagId'
+    post:
+      summary: Update the values for the given tag.
+      description: |
+        Update the values for the given tag.
+      tags:
+        - Tags
+      operationId: updateTagValues
+      requestBody:
+        description: Contains the values to be updated.
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/ValueUpdateEntry'
+      security:
+        - bearer: []
+      responses:
+        '204':
+          $ref: '#/components/responses/NoContent'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /tags/{tagId}/versionHistory:
+    parameters:
+      - $ref: '#/components/parameters/TagId'
+    get:
+      summary: Retrieve the version history for the given tag.
+      description: |
+        Retrieve the version history for the given tag.  The sort is automatically
+        from newest to oldest.  Pagination is supported.
+      tags:
+        - Tags
+      operationId: getTagVersionHistory
+      security:
+        - bearer: []
+      parameters:
+        - $ref: '#/components/parameters/page'
+        - $ref: '#/components/parameters/perPage'      
+      responses:
+        '200':
+          $ref: '#/components/responses/TagVersionHistoryResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'          
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  
+  /tags/{tagId}/managementLog:
+    parameters:
+      - $ref: '#/components/parameters/TagId'    
+    get:
+      summary: Retrieve the management log for the given tag.
+      description: |
+        Retrieve the management log for the given tag.  The sort is automatically
+        from newest to oldest.  Pagination is supported.
+      tags:
+        - Tags
+      operationId: getTagManagementLog
+      security:
+        - bearer: []
+      parameters:
+        - $ref: '#/components/parameters/page'
+        - $ref: '#/components/parameters/perPage'      
+      responses:
+        '200':
+          $ref: '#/components/responses/TagLogResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'          
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'          
+
+  /tags/batchUpdate:
+    post:
+      summary: Perform batch update on tags.
+      description: |
+        Perform batch update on tags.  The response will contain the tags which were
+        updated successfully, and the tags which failed to be updated.
+      tags:
+        - Tags
+      operationId: batchUpdateTags
+      security:
+        - bearer: []
+      requestBody:
+        description: Contains the tags to be updated, and the updated data.
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                tagLabels:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      tagId:
+                        type: string
+                        description: The name of the tag id to update.
+                      tagLabel:
+                        type: string
+                        description: The updated tag label.
+                serverName:
+                  type: string
+                  description: The updated server name.
+                sourceSystem:
+                  type: string
+                  description: The updated source system.
+      responses:
+        '200':
+          $ref: '#/components/responses/BatchOperationTagResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'          
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+          
+  /tags/batchDelete:
+    post:
+      summary: Perform batch delete on tags.
+      description: |
+        Perform batch delete on tags.  The response will contain the tags
+        which were deleted successfully, and the tags which failed to be
+        deleted.
+      tags:
+        - Tags  
+      operationId: batchDeleteTags
+      security:
+        - bearer: []
+      requestBody:
+        description: Contains the tags to be deleted
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                type: string
+      responses:
+        '200':
+          $ref: '#/components/responses/BatchOperationTagResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'          
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+          
+  /tags/associations/bulkUpdate:
+    post:
+      summary: Perform batch update on dataset associations belonging to multiple tags.
+      description: |
+        Perform batch update on dataset associations belonging to multiple tags.  The response
+        will contain the tags which were updated successfully, and the tags which failed to
+        be deleted.  The default value for the tag is assigned for tags which are newly
+        associated with a dataset.
+      tags:
+        - Tags
+      operationId: batchTagAssociation
+      security:
+        - bearer: []
+      requestBody:
+        description: Contains the Tags to modify, and the Dataset Modifications.
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                tags:
+                  type: array
+                  items:
+                    type: string
+                editType:
+                  type: string
+                  enum: [ ADD, REMOVE ]
+                datasetAssociations:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        '200':
+          $ref: '#/components/responses/BatchOperationTagResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  
+  /activities:
+    get:
+      summary: Retrieve the activities in the Metadata Editor Application.
+      description: |
+        Retrieve the activities in the Metadata Editor Application.  Pagination and sorting is supported.
+      parameters:
+        - name: dateMin
+          in: query
+          description: Minimum bound of date filter.
+          schema:
+            type: string
+            format: date-time
+        - name: dateMax
+          in: query
+          description: Maximum bound of date filter.
+          schema:
+            type: string
+            format: date-time          
+        - name: userName
+          in: query
+          description: Filter by username.
+          schema:
+            type: string
+        - name: datasetName
+          in: query
+          description: Filter by involved dataset name.
+          schema:
+            type: string
+        - name: sortBy
+          in: query
+          description: Indicates sort column
+          schema:
+            type: string
+            enum: [date, action]
+        - name: sortOrder
+          in: query
+          description: Indicates sort order
+          schema:
+            type: string
+            enum: [ASC, DESC]
+        - name: action
+          in: query
+          description: Indicates the action to use
+          schema:
+            type: string
+            enum: [PropertyChange, ValueChange, AddAssociation, RemoveAssociation]
+        - name: tagName
+          in: query
+          description: Filter by tag name.
+          schema:
+            type: string
+        - $ref: '#/components/parameters/page'
+        - $ref: '#/components/parameters/perPage'            
+      tags:
+        - Activities
+      operationId: getActivities
+      responses:
+        '200':
+          $ref: '#/components/responses/LogEntryArrayResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'      
+
+  /quicksearch:
+    post:
+      summary: Quicksearch endpoint for quick searches on both Dataset and Tags.
+      description: |
+        Quick Search endpoint for quick searches on both Dataset and Tags.  Pagination is supported.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/QuickSearchParameters'
+      tags:
+        - QuickSearch
+      operationId: quickSearch
+      responses:
+        '200':
+          $ref: '#/components/responses/QuicksearchArrayResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'      
+      
+  /lookups/serverNames:
+    get:      
+      summary: Lookup endpoint to retrieve the server names in the system.
+      description: |
+        Lookup endpoint to retrieve the server names in the system.
+      tags:
+        - Lookup
+      operationId: lookupServerNames
+      parameters:
+        - $ref: '#/components/parameters/page'
+        - $ref: '#/components/parameters/perPage'      
+      responses:
+        '200':
+          $ref: '#/components/responses/LookupArrayResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /lookups/sourceSystems:
+    get:      
+      summary: Lookup endpoint to retrieve the source systems in the application.
+      description: |
+        Lookup endpoint to retrieve the source systems in the application.
+      tags:
+        - Lookup
+      operationId: lookupSourceSystem
+      parameters:
+        - $ref: '#/components/parameters/page'
+        - $ref: '#/components/parameters/perPage'      
+      responses:
+        '200':
+          $ref: '#/components/responses/LookupArrayResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        
+components:
+  securitySchemes:
+    bearer:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    page:
+      name: page
+      in: query
+      description: The page number. 1 based.
+      required: false
+      schema:
+        type: integer
+        default: 1
+        
+    perPage:
+      name: perPage
+      in: query
+      description: The number of entities shown in one page.
+      required: false
+      schema:
+        type: integer
+        default: 10
+        maximum: 100
+
+    sortBy:
+      name: sortBy
+      in: query
+      description: The field used to sort the results
+      required: false
+      schema:
+        type: string
+
+    sortOrder:
+      name: sortOrder
+      in: query
+      description: The sorting order (asc/desc).
+      required: false
+      schema:
+        type: string
+        enum:
+          - asc
+          - desc
+        default: desc
+        
+    TagId:
+      name: tagId
+      in: path
+      required: true
+      description: The tag id
+      schema:
+        type: string
+
+    DatasetId:
+      name: datasetId
+      in: path
+      required: true
+      description: The dataset id
+      schema:
+        type: string
+
+    ExpertId:
+      name: expertId
+      in: path
+      required: true
+      description: The expert id
+      schema:
+        type: string
+
+  schemas:
+    Error:
+      type: object
+      required:
+        - message
+      properties:
+        message:
+          type: string
+
+    DashboardStats:
+      type: object
+      description: The dashboard stats for the Metadata Editor Application.
+      properties:
+        annotatedAssets:
+          type: number
+          description: The annotated assets in the application.
+        unannotatedAssets:
+          type: number
+          description: The unannotated assets in the application.
+        users:
+          type: number
+          description: The count of users in the application.
+        publishers:
+          type: number
+          description: The count of publishers in the application.
+    
+    Dataset:
+      type: object
+      description: An object that represents a Dataset Asset.
+      properties:
+        id:
+          type: string
+          description: The id of the dataset.
+        name:
+          type: string
+          description: The name of the dataset.
+        description:
+          type: string
+          description: The description of the dataset.
+        createdBy:
+          type: string
+          description: The full name of the user that created the dataset.
+        createdOn:
+          type: string
+          format: date-time
+          description: The date that this asset was created.
+        updatedBy:
+          type: string
+          description: The full name of the user that last updated the dataset.
+        updatedOn:
+          type: string
+          format: date-time
+          description: The date that this asset was last updated.
+        tags:
+          type: array
+          items:
+            $ref: '#/components/schemas/DatasetTagValue'
+
+    DatasetTagValue:
+      type: object
+      description: Represents a tag-value pair that is assigned to a dataset.
+      properties:
+        tagId:
+          type: string
+          description: The id of the tag associated with this dataset.
+        tagName:
+          type: string
+          description: The name of the tag associated with this value.
+        tagValue:
+          type: string
+          description: The value of the tag.
+          
+    DatasetTagModifyValue:
+      type: object
+      description: Indicates a request to modify a dataset-tag value pair.
+      properties:
+        datasetId:
+          type: string
+          description: The dataset whose tag to modify.
+        tagValue:
+          type: string
+          description: The value of the tag.
+        shouldRemove:
+          type: boolean
+          description: |
+                Indicates whether this tag should be removed 
+                from the given dataset.
+    QuickSearchParameters:
+      type: object
+      description: Represents the search parameters that are used when performing a quick search.
+      properties:
+        pageSize:
+          type: number
+          description: The page size of search results to return.
+        pageNumber:
+          type: number
+          description: The page number to return (starts at 1).
+        searchString:
+          type: string
+          description: The search string to use.
+    
+    TagSearchParameters:
+      type: object
+      description: Represents the search and filter parameters that are used when searching a Tag.
+      properties:
+        pageSize:
+          type: number
+          description: The page size of search results to return.
+        pageNumber:
+          type: number
+          description: The page number to return (starts at 1).
+        ids:
+          type: array
+          description: Limit the search to the ids specified here.
+          items:
+            type: string
+        tagTypeNameFilterType:
+          type: string
+          description: How to filter via Tag Type Name.  Needs to be paired with tagTypeNameFilterValue.
+          enum: [ 'Contains', 'DoesNotContain' ]
+        tagTypeNameFilterValue:
+          type: string
+          description: The value to use as a filter for Tag Type Name.
+        createdDateMin:
+          type: string
+          format: date-time
+          description: The minimum created date to filter. Should be less than createdDateMax.
+        createdDateMax:
+          type: string
+          format: date-time
+          description: The maximum created date to filter. Should be greater than createdDateMin.
+        createdBy:
+          type: string
+          description: Filter by the user that created the object.
+        lastUpdatedDateMin:
+          type: string
+          format: date-time
+          description: The minimum lastUpdated date to filter. Should be less than lastUpdatedDateMax.
+        lastUpdatedDateMax:
+          type: string
+          format: date-time
+          description: The maximum lastUpdated date to filter. Should be greater than lastUpdatedDateMin.
+        lastUpdatedBy:
+          type: string
+          description: Filter by the user that last updated the object.
+        serverName:
+          type: string
+          description: Filter by server name.
+        version:
+          type: string
+          description: Filter by version.
+        sourceSystem:
+          type: string
+          description: Filter by source system.
+        #columnName:
+        #  type: string
+        #  description: Filter by column name.
+    
+    DatasetSearchParameters:
+      description: Represents the search and filter parameters that are used when searching a Dataset.
+      allOf:
+        - $ref: '#/components/schemas/TagSearchParameters'
+        - type: object
+          properties:
+            datasetAssetName:
+              type: string
+              description: The dataset asset name to filter.
+            isAnnotated:
+              type: string
+              description: |
+                Indicates whether the dataset has an associated tag or not.
+        
+    TagValue:
+      type: object
+      description: |
+        Represents a unique value of a tag, including the datasets that this
+        value has been assigned to.
+      properties:
+        tagValue:
+          type: string
+          description: The unique value represented in this tag value.
+        datasets:
+          type: array
+          description: An array of datasets which contain this unique tag value.
+          items:
+            type: array
+            items:
+              $ref: '#/components/schemas/DatasetShort'
+
+    DatasetShort:
+      type: object
+      description: |
+        A shorter summary of a dataset, containing only a few key properties.
+      properties:
+        id:
+          type: string
+          description: The id of the dataset.
+        name:
+          type: string
+          description: The name of the dataset.
+    
+    Tag:
+      type: object
+      description: |
+        Object that represents a tag.  A tag is an attribute that can be assigned to a dataset.
+      properties:
+        id:
+          type: string
+          description: The id of the tag.
+        name:
+          type: string
+          description: The name of the tag.
+        version:
+          type: string
+          description: The version of the tag.
+        server:
+          type: string
+          description: The name of the server associated with the tag.
+        sourceSystem:
+          type: string
+          description: The source system associated with the tag.
+        description:
+          type: string
+          description: The description of the tag.
+        defaultValue:
+          type: string
+          description: The default value to use for the tag.
+        createdBy:
+          type: string
+          description: The full name of the user that created the tag.
+        createdOn:
+          type: string
+          format: date-time
+          description: The date that this tag was created.
+        updatedBy:
+          type: string
+          description: The full name of the user that last updated the tag.
+        updatedOn:
+          type: string
+          format: date-time
+          description: The date that this tag was last updated.
+          
+    CreateTagRequest:
+      type: object
+      description: |
+        Object that contains the data that is needed to create a new Tag.
+      properties:
+        name:
+          type: string
+          description: The name of the tag.        
+        server:
+          type: string
+          description: The name of the server associated with the tag.
+        sourceSystem:
+          type: string
+          description: The source system associated with the tag.
+        description:
+          type: string
+          description: The description of the tag.
+        defaultValue:
+          type: string
+          description: The default value to use for the tag.
+          
+    UpdateTagRequest:
+      type: object
+      description: |
+        Object that contains the data needed to update a Tag.
+      allOf:
+        - $ref: '#/components/schemas/CreateTagRequest'
+        - type: object
+          properties:
+            comment:
+              type: string
+              description: Comments on updating the tag.
+            versionNumber:
+              type: string
+              description: |
+                The version number to use.  Note that the application will only
+                accept a version number that is equal or greater than the existing version
+                number.
+                
+    TagVersionHistoryEntry:
+      type: object
+      description: |
+        A single entry in the history of the tag version.
+      properties:
+        actor:
+          type: string
+          description: The user responsible for performing the change.
+        date:
+          type: string
+          format: date-time
+          description: The date when this entry was created.
+        comment:
+          type: string
+          description: A comment that was provided when updating the tag.
+        version:
+          type: string
+          description: The tag version.
+    
+    TagLogEntry:
+      type: object
+      description: |
+        A single entry in the tag log.
+      properties:
+        actor:
+          type: string
+          description: The user responsible for performing the change.
+        date:
+          type: string
+          format: date-time
+          description: The date when this entry was created.
+        type:
+          type: string
+          description: |
+            Indicates the type of log entry.  There are 4 types of entries
+              1. PropertyChange indicates a change in the Tag property.
+              2. ValueChange indicates a mass change of a Tag value into another tag value.
+              3. AddAssociation indicates the tag was added to datasets.
+              4. RemoveAssociation indicates the tag was removed from datasets.
+          enum: [ PropertyChange, ValueChange, AddAssociation, RemoveAssociation ]
+        propertyName:
+          type: string
+          description: For PropertyChange entries, indicates the property name that was changed.
+        oldValue:
+          type: string
+          description: For PropertyChange and ValueChange entries, indicates the old value.
+        newValue:
+          type: string
+          description: For PropertyChange and ValueChange entries, indicates the new value.
+        datasets:
+          type: array
+          description: For AddAssociation and RemoveAssociation, indicates the datasets involved.
+          items:
+            type: string
+    
+    LogEntry:
+      description: |
+        A single entry in the Activity Log.
+      type: object
+      allOf:
+        - $ref: '#/components/schemas/TagLogEntry'
+        - type: object
+          properties:
+            tagId:
+              type: string
+              description: The id of the tag involved.
+            tagName:
+              type: string
+              description: The name of the tag involved.
+          
+    DatasetTagModifyRequest:
+      description: |
+        A single request to modify the association between dataset and tag during a batch
+        update operation.  The request cannot contain both bulkUpdateValue or individualUpdateValue.
+      properties:
+        tagId:
+          type: string
+          description: The id of the tag to update.
+        shouldRemove:
+          type: boolean
+          description: |
+            Indicates whether this tag should be removed 
+            from all the datasets in this request.
+        bulkUpdateValue:
+          type: string
+          description: |
+             Set the value of this tag to the given value for the relevant datasets.  If this property is present,
+             then individualUpdateValue should not be present.
+        individualUpdateValue:
+          type: array
+          description: |
+            Set the value of this tag for each individual dataset.  If this property is present,
+             then bulkUpdateValue should not be present.  In addition, the array should only contain
+             Datasets that were present in the containing request.
+          items:
+            $ref: '#/components/schemas/DatasetTagModifyValue'
+
+    Expert:
+      description: |
+        Represents an Expert in the Metadata Editor Application.
+      properties:
+        id:
+          type: string
+          description: The id of the expert.
+        expertName:
+          type: string
+          description: The name of the expert.
+        expertType:
+          type: string
+          description: The type of the expert.
+          
+    UserInfo:
+      description: |
+        Represents the user info for the Metadata Editor Application.
+      properties:
+        id:
+          type: string
+          description: The id of the user.
+        name:
+          type: string
+          description: The name of the user.
+        role:
+          type: string
+          description: The role of the user.
+          
+    LookupValue:
+      description: |
+        Represents a lookup value in the system.
+      properties:
+        id:
+          type: string
+          description: the id of the entity.
+        displayLabel:
+          type: string
+          description: The display label of the entity.
+          
+    QuickSearchEntry:
+      description: |
+        Represents the quick search entry in the Metadata Editor Application.
+      properties:
+        id:
+          type: string
+          description: The id of the entity.
+        type:
+          type: string
+          description: The type of entity.
+          enum: [Dataset, Tag]
+        name:
+          type: string
+          description: The name of the entity.
+          
+    ValueUpdateEntry:
+      description: |
+        Represents a request to update a tag value.
+      properties:
+        oldValue:
+          type: string
+          description: The existing value of the tag to update.
+        newValue:
+          type: string
+          description: The updated value of the tag to update.
+
+  headers:
+    X-Page:
+      schema:
+        type: integer
+      description: Index of the current page (starting at 1)
+    X-Per-Page:
+      schema:
+        type: integer
+      description: Number of items per page
+    X-Prev-Page:
+      schema:
+        type: integer
+      description: Index of the previous page
+    X-Next-Page:
+      schema:
+        type: integer
+      description: Index of the next page
+    X-Total:
+      schema:
+        type: integer
+      description: Total number of items
+    X-Total-Pages:
+      schema:
+        type: integer
+      description: Total number of pages
+    Link:
+      schema:
+        type: string
+      description: Pagination link header
+
+  responses:
+    BatchOperationTagResponse:
+      description: |
+        Response for a batch operation. Returns the tags that were
+        successful, and the tags that failed the operation.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              success:
+                type: array
+                description: Array of tag ids that were successful.
+                items:
+                  type: string
+              failed:
+                type: array
+                description: Array of tag ids that failed the operation.
+                items:
+                  type: string
+    
+    TagResponse:
+      description: |
+        Response that returns a single Tag.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Tag'
+            
+    DashboardStatsResponse:
+      description: |
+        Response that returns a DashboardStats object.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/DashboardStats'
+
+    UserInfoResponse:
+      description: |
+        Response that returns a UserInfo object.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/UserInfo'
+
+    LookupArrayResponse:
+      description: |
+        Response that returns an array of LookupValues.
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: '#/components/schemas/LookupValue'      
+      headers:
+        X-Page:
+          $ref: '#/components/headers/X-Page'
+        X-Per-Page:
+          $ref: '#/components/headers/X-Per-Page'
+        X-Next-Page:
+          $ref: '#/components/headers/X-Next-Page'
+        X-Prev-Page:
+          $ref: '#/components/headers/X-Prev-Page'
+        X-Total:
+          $ref: '#/components/headers/X-Total'
+        X-Total-Pages:
+          $ref: '#/components/headers/X-Total-Pages'
+        Link:
+          $ref: '#/components/headers/Link'   
+
+    TagVersionHistoryResponse:
+      description: |
+        Response that returns an array of TagVersionHistory Entries.
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: '#/components/schemas/TagVersionHistoryEntry'      
+      headers:
+        X-Page:
+          $ref: '#/components/headers/X-Page'
+        X-Per-Page:
+          $ref: '#/components/headers/X-Per-Page'
+        X-Next-Page:
+          $ref: '#/components/headers/X-Next-Page'
+        X-Prev-Page:
+          $ref: '#/components/headers/X-Prev-Page'
+        X-Total:
+          $ref: '#/components/headers/X-Total'
+        X-Total-Pages:
+          $ref: '#/components/headers/X-Total-Pages'
+        Link:
+          $ref: '#/components/headers/Link'   
+
+    TagLogResponse:
+      description: |
+        Response that returns an array of Tag Log Entries.
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: '#/components/schemas/TagLogEntry'      
+      headers:
+        X-Page:
+          $ref: '#/components/headers/X-Page'
+        X-Per-Page:
+          $ref: '#/components/headers/X-Per-Page'
+        X-Next-Page:
+          $ref: '#/components/headers/X-Next-Page'
+        X-Prev-Page:
+          $ref: '#/components/headers/X-Prev-Page'
+        X-Total:
+          $ref: '#/components/headers/X-Total'
+        X-Total-Pages:
+          $ref: '#/components/headers/X-Total-Pages'
+        Link:
+          $ref: '#/components/headers/Link'
+          
+    DatasetResponse:
+      description: |
+        Response that returns a single Dataset.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Dataset'
+          
+    DatasetArrayResponse:
+      description: |
+        Response that returns an array of Datasets.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              totalAssets:
+                type: number
+                description: The total number of assets in the result set.
+              annotatedAssets:
+                type: number
+                description: The total number of annotated assets in the result set.
+              datasets:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Dataset'      
+      headers:
+        X-Page:
+          $ref: '#/components/headers/X-Page'
+        X-Per-Page:
+          $ref: '#/components/headers/X-Per-Page'
+        X-Next-Page:
+          $ref: '#/components/headers/X-Next-Page'
+        X-Prev-Page:
+          $ref: '#/components/headers/X-Prev-Page'
+        X-Total:
+          $ref: '#/components/headers/X-Total'
+        X-Total-Pages:
+          $ref: '#/components/headers/X-Total-Pages'
+
+    QuicksearchArrayResponse:
+      description: |
+        Response that returns an array of QuickSearchEntries.
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: '#/components/schemas/QuickSearchEntry'      
+      headers:
+        X-Page:
+          $ref: '#/components/headers/X-Page'
+        X-Per-Page:
+          $ref: '#/components/headers/X-Per-Page'
+        X-Next-Page:
+          $ref: '#/components/headers/X-Next-Page'
+        X-Prev-Page:
+          $ref: '#/components/headers/X-Prev-Page'
+        X-Total:
+          $ref: '#/components/headers/X-Total'
+        X-Total-Pages:
+          $ref: '#/components/headers/X-Total-Pages'
+  
+    LogEntryArrayResponse:
+      description: |
+        Response that returns an array of Log Entries.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              allActivities:
+                type: number
+                description: Count of all the activities.
+              myActivities:
+                type: number
+                description: Count of the user's activities.
+              entries:
+                type: array
+                items:
+                  $ref: '#/components/schemas/LogEntry'
+      headers:
+        X-Page:
+          $ref: '#/components/headers/X-Page'
+        X-Per-Page:
+          $ref: '#/components/headers/X-Per-Page'
+        X-Next-Page:
+          $ref: '#/components/headers/X-Next-Page'
+        X-Prev-Page:
+          $ref: '#/components/headers/X-Prev-Page'
+        X-Total:
+          $ref: '#/components/headers/X-Total'
+        X-Total-Pages:
+          $ref: '#/components/headers/X-Total-Pages'
+        Link:
+          $ref: '#/components/headers/Link'
+  
+    TagSearchResponse:
+      description: |
+        Response that returns an array of Tags and some
+        additional metadata regarding the results.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              totalTags:
+                type: number
+                description: The total number of tags in the results.
+              activeTags:
+                type: number
+                description: The total number of tags in the results.
+              tags:
+                type: array
+                description: The array of tag search results.
+                items:
+                  $ref: '#/components/schemas/Tag'      
+      headers:
+        X-Page:
+          $ref: '#/components/headers/X-Page'
+        X-Per-Page:
+          $ref: '#/components/headers/X-Per-Page'
+        X-Next-Page:
+          $ref: '#/components/headers/X-Next-Page'
+        X-Prev-Page:
+          $ref: '#/components/headers/X-Prev-Page'
+        X-Total:
+          $ref: '#/components/headers/X-Total'
+        X-Total-Pages:
+          $ref: '#/components/headers/X-Total-Pages'  
+  
+    TagArrayResponse:
+      description: |
+        Response that returns an array of Tags.
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: '#/components/schemas/Tag'      
+      headers:
+        X-Page:
+          $ref: '#/components/headers/X-Page'
+        X-Per-Page:
+          $ref: '#/components/headers/X-Per-Page'
+        X-Next-Page:
+          $ref: '#/components/headers/X-Next-Page'
+        X-Prev-Page:
+          $ref: '#/components/headers/X-Prev-Page'
+        X-Total:
+          $ref: '#/components/headers/X-Total'
+        X-Total-Pages:
+          $ref: '#/components/headers/X-Total-Pages'
+  
+    TagDetailResponse:
+      description: |
+        Response that provides a detailed view of the tags.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              tag:
+                $ref: '#/components/schemas/Tag'
+              tagValues:
+                type: array
+                description: |
+                  An array of TagValues, containing the unique values for each tag, as well
+                  as the datasets that contain those values.
+                items:
+                  $ref: '#/components/schemas/TagValue'
+
+    ExpertArrayResponse:
+      description: |
+        Response that returns an array of Experts.
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: '#/components/schemas/Expert'      
+      headers:
+        X-Page:
+          $ref: '#/components/headers/X-Page'
+        X-Per-Page:
+          $ref: '#/components/headers/X-Per-Page'
+        X-Next-Page:
+          $ref: '#/components/headers/X-Next-Page'
+        X-Prev-Page:
+          $ref: '#/components/headers/X-Prev-Page'
+        X-Total:
+          $ref: '#/components/headers/X-Total'
+        X-Total-Pages:
+          $ref: '#/components/headers/X-Total-Pages'
+        Link:
+          $ref: '#/components/headers/Link'
+          
+    NoContent:
+      description: |
+        The operation completed successfully but no content is needed
+        in the response.
+
+    BadRequest:
+      description: Bad request - Problem with the request (E.g. Missing parameters)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    Unauthorized:
+      description: Unauthorized - Token is missing or Invalid token
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    Forbidden:
+      description: Forbidden - User is not allowed to access this end point
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    NotFound:
+      description: Not found - Requested entity is not found in database
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    Conflict:
+      description: Conflict - Request creates conflict in database. E.g. Using duplicate names
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    InternalServerError:
+      description: Internal Server Error - Request is valid but operation failed at server side
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'

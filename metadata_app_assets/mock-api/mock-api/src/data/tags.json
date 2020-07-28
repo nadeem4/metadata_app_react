@@ -1,0 +1,15 @@
+[
+    {
+      "id": "string",
+      "name": "string",
+      "version": "string",
+      "server": "string",
+      "sourceSystem": "string",
+      "description": "string",
+      "defaultValue": "string",
+      "createdBy": "string",
+      "createdOn": "2020-07-28T02:11:49.777Z",
+      "updatedBy": "string",
+      "updatedOn": "2020-07-28T02:11:49.777Z"
+    }
+  ]

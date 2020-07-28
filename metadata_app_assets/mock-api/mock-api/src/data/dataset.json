@@ -1,0 +1,16 @@
+{
+  "id": 0,
+  "name": "string",
+  "description": "string",
+  "createdBy": "string",
+  "createdOn": "2020-07-27T15:48:47.944Z",
+  "updatedBy": "string",
+  "updatedOn": "2020-07-27T15:48:47.944Z",
+  "tags": [
+    {
+      "tagId": "string",
+      "tagName": "string",
+      "tagValue": "string"
+    }
+  ]
+}
